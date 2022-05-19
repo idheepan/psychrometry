@@ -10,8 +10,8 @@
 //! The following example lets you get the enthalpy of moist air with dry bulb temperature
 //! and relative humidty.
 //! ```
-//! use psychrometry::Psychrolib;
-//! let mut psychrolib = Psychrolib::default();
+//! use psychrometry::psychrolib;
+//! let mut psychrolib = psychrolib::SI {};
 //! let rel_hum = 0.25_f64; //Relative humidity from 0 to 1
 //! let t_dry_bulb = 30_f64; //Dry bulb temperature in Celcius for SI
 //! let pres_ambient = 101325_f64; //Ambient pressure in Pa for SI
@@ -34,7 +34,7 @@
 //! - `get_hum_ratio_from_rel_hum`
 //!
 //!
-// #![forbid(unsafe_code)]
+#![forbid(unsafe_code)]
 #![warn(clippy::all)]
 //TODO: Fix documentation formating for units with underscore
 //TODO: Documentation for Result errors. The pedantic warning can be enabled after that.
@@ -56,71 +56,110 @@ mod tests {
     #[test]
     /// Simple tests. Compared with psychrolib packages
     fn get_sat_vap_pres_normal() {
-        let mut psychrolib = Psychrolib::default();
+        let mut psychrolib = psychrolib::SI {};
         assert_eq!(
-            4253,
-            psychrolib.get_sat_vap_pres(30.032).unwrap_or(0.0) as i64
+            259.9028,
+            (psychrolib.get_sat_vap_pres(-10.0).unwrap_or(0.0) * 1E4).trunc() / 1E4
         );
+        let mut psychrolib = psychrolib::IP {};
         assert_eq!(
-            271,
-            psychrolib.get_sat_vap_pres(-9.513).unwrap_or(0.0) as i64
+            0.0108,
+            (psychrolib.get_sat_vap_pres(-10.0).unwrap_or(0.0) * 1E4).trunc() / 1E4
         );
     }
     #[test]
     fn get_moist_air_enthalpy_normal() {
-        let mut psychrolib = Psychrolib::default();
+        let mut psychrolib = psychrolib::SI {};
         assert_eq!(
-            55748,
-            psychrolib
+            55748.0,
+            (psychrolib
                 .get_moist_air_enthalpy(30.0, 0.010)
-                .unwrap_or(0.0) as i64
+                .unwrap_or(0.0)
+                * 1E4)
+                .trunc()
+                / 1E4
         );
+        let mut psychrolib = psychrolib::IP {};
         assert_eq!(
-            5055,
-            psychrolib
-                .get_moist_air_enthalpy(-0.016, 0.002028)
-                .unwrap_or(0.0) as i64
+            17.9431,
+            (psychrolib
+                .get_moist_air_enthalpy(30.0, 0.010)
+                .unwrap_or(0.0)
+                * 1E4)
+                .trunc()
+                / 1E4
         );
     }
 
     #[test]
     fn get_vap_pres_from_hum_ratio_normal() {
-        let mut psychrolib = Psychrolib::default();
+        let psychrolib = psychrolib::SI {};
         assert_eq!(
-            963,
-            psychrolib
-                .get_vap_pres_from_hum_ratio(0.005972, 101325.0)
-                .unwrap_or(0.0) as i64
+            808.0852,
+            (psychrolib
+                .get_vap_pres_from_hum_ratio(0.005, 101325.0)
+                .unwrap_or(0.0)
+                * 1E4)
+                .trunc()
+                / 1E4
+        );
+        let psychrolib = psychrolib::IP {};
+        assert_eq!(
+            0.1172,
+            (psychrolib
+                .get_vap_pres_from_hum_ratio(0.005, 14.6959488)
+                .unwrap_or(0.0)
+                * 1E4)
+                .trunc()
+                / 1E4
         );
     }
 
     #[test]
     fn get_rel_hum_from_vap_pres_normal() {
-        let mut psychrolib = Psychrolib::default();
+        let mut psychrolib = psychrolib::SI {};
         assert_eq!(
-            48,
+            0.3420,
             (psychrolib
-                .get_rel_hum_from_vap_pres(20.022, 1132.084)
+                .get_rel_hum_from_vap_pres(20.0, 800.0)
                 .unwrap_or(0.0)
-                * 100.0) as i64
+                * 1E4)
+                .trunc()
+                / 1E4
         );
     }
 
     #[test]
     fn get_vap_pres_from_rel_hum_normal() {
-        let mut psychrolib = Psychrolib::default();
+        let mut psychrolib = psychrolib::SI {};
         assert_eq!(
-            1897,
-            psychrolib
-                .get_vap_pres_from_rel_hum(30.032, 0.44603)
-                .unwrap_or(0.0) as i64
+            935.5214,
+            (psychrolib
+                .get_vap_pres_from_rel_hum(20.0, 0.4)
+                .unwrap_or(0.0)
+                * 1E4)
+                .trunc()
+                / 1E4
         );
-        assert!(psychrolib.get_vap_pres_from_rel_hum(0.0, -0.4).is_err());
+    }
+
+    #[test]
+    fn get_hum_ratio_from_vap_pres_normal() {
+        let mut psychrolib = psychrolib::SI {};
+        assert_eq!(
+            0.0055,
+            (psychrolib
+                .get_hum_ratio_from_vap_pres(900.0, 101325.0)
+                .unwrap_or(0.0)
+                * 1E4)
+                .trunc()
+                / 1E4
+        );
     }
 
     #[test]
     fn get_hum_ratio_from_rel_hum_normal() {
-        let mut psychrolib = Psychrolib::default();
+        let mut psychrolib = psychrolib::SI;
         assert_eq!(
             0.007165,
             (psychrolib
