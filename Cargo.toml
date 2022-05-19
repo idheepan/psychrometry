@@ -1,0 +1,16 @@
+[package]
+name = "psychrometry"
+version = "0.1.0"
+authors = ["Dheepan <idheepan@gmail.com>"]
+license = "MIT"
+description = "Psychrometric calculations in Rust"
+documentation = "https://docs.rs/psychrometry"
+repository = "https://github.com/idheepan/psychrometry"
+keywords = ["physics", "psychrolib", "humidity"]
+categories = ["aerospace::simulation", "science"]
+readme = "README.md"
+edition = "2021"
+
+[badges]
+maintenance = { status = "actively-developed" }
+[dependencies]
