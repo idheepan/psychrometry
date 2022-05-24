@@ -12,8 +12,8 @@ repository uses CamelCase. This library will update when it merges upstream.
 The following example lets you get the enthalpy of moist air with dry bulb temperature
 and relative humidty.
 ```
-use psychrometry::Psychrolib;
-let mut psychrolib = Psychrolib::default();
+use psychrometry::psychrolib;
+let mut psychrolib = psychrolib::SI {};
 let rel_hum = 0.25_f64; //Relative humidity from 0 to 1
 let t_dry_bulb = 30_f64; //Dry bulb temperature in Celcius for SI
 let pres_ambient = 101325_f64; //Ambient pressure in Pa for SI
