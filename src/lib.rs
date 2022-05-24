@@ -46,8 +46,9 @@
 //TODO: Feature to select SI unit library or IP or both. Compile only what is necessary.
 //TODO: Is a class even necessary just to track unit system?
 
-mod psychrolib;
-pub use psychrolib::*;
+/// Funtions for psychrometric calculations.
+pub mod psychrolib;
+use psychrolib::*;
 #[cfg(test)]
 /// Module for testing the straightforward functions of the library
 mod tests {
