@@ -45,7 +45,8 @@
 #![allow(unused)]
 //TODO: Feature to select SI unit library or IP or both. Compile only what is necessary.
 //TODO: Is a class even necessary just to track unit system?
-
+//FIXME: Look at this monstrosity to include: use psychrometry::psychrolib::{self, PsychrometryFunctions, UnitIndependent};
+//Clean up the exports from this library.
 /// Funtions for psychrometric calculations.
 pub mod psychrolib;
 use psychrolib::*;
