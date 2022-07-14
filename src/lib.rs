@@ -38,35 +38,40 @@
 // TODO: Implement standard math operations.
 /// Funtions for psychrometric calculations.
 
-use core::marker::PhantomData;
-use core::cmp;
+pub mod quantities {
+    use core::cmp;
+    use core::marker::PhantomData;
+    use core::ops;
 
-pub mod quantities{
-    use std::marker::PhantomData;
-    const TEMP_TOLERANCE:i64 = 200; //Microkelvins
+    const TEMP_TOLERANCE: i64 = 200; //Microkelvins
     #[derive(Debug)]
     pub struct Temperature<T: crate::units::TemperatureUnit> {
         micro_kelvin: i64,
-        unit: PhantomData<T>
+        unit: PhantomData<T>,
     }
     macro_rules! ImplTemperatureFromNumber {
         ($N:ty) => {
-            impl <T> From<$N> for Temperature<T>
-            where T: crate::units::TemperatureUnit
+            impl<T> From<$N> for Temperature<T>
+            where
+                T: crate::units::TemperatureUnit,
             {
-                fn from( n: $N) -> Self {
+                fn from(n: $N) -> Self {
                     Temperature {
-                        micro_kelvin : (n as f64 * T::conv_factor_micro_kelvin() as f64 + T::conv_offset_micro_kelvin() as f64) as i64,
+                        micro_kelvin: (n as f64 * T::conv_factor_micro_kelvin() as f64
+                            + T::conv_offset_micro_kelvin() as f64)
+                            as i64,
                         unit: PhantomData,
                     }
                 }
             }
 
-            impl <T> From<Temperature<T>> for $N
-            where T: crate::units::TemperatureUnit
+            impl<T> From<Temperature<T>> for $N
+            where
+                T: crate::units::TemperatureUnit,
             {
-                fn from( t: Temperature<T>) -> $N {
-                    (((t.micro_kelvin - T::conv_offset_micro_kelvin()) as f64) / (T::conv_factor_micro_kelvin() as f64)) as $N
+                fn from(t: Temperature<T>) -> $N {
+                    (((t.micro_kelvin - T::conv_offset_micro_kelvin()) as f64)
+                        / (T::conv_factor_micro_kelvin() as f64)) as $N
                 }
             }
         };
@@ -74,25 +79,132 @@ pub mod quantities{
     ImplTemperatureFromNumber!(i64);
     ImplTemperatureFromNumber!(f64);
 
-    impl<'a,T1, T2> From<&'a Temperature<T1>> for Temperature<T2> 
-        where T1:crate::units::TemperatureUnit,
-              T2:crate::units::TemperatureUnit  
-        {
-            fn from(t1: &'a Temperature<T1>) -> Self {
-                Temperature { micro_kelvin: ( t1.micro_kelvin ), unit: (PhantomData) }
+    impl<'a, T1, T2> From<&'a Temperature<T1>> for Temperature<T2>
+    where
+        T1: crate::units::TemperatureUnit,
+        T2: crate::units::TemperatureUnit,
+    {
+        fn from(t1: &'a Temperature<T1>) -> Self {
+            Temperature {
+                micro_kelvin: (t1.micro_kelvin),
+                unit: (PhantomData),
+            }
         }
     }
 
-    impl<T> PartialEq for Temperature<T> 
-    where T: crate::units::TemperatureUnit
+    macro_rules! ImplOpsForNumber {
+        ($N:ty) => {
+            impl<T> ops::Add<$N> for Temperature<T>
+            where
+                T: crate::units::TemperatureUnit,
+            {
+                type Output = Self;
+                fn add(self, rhs: $N) -> Self::Output {
+                    Temperature {
+                        micro_kelvin: self.micro_kelvin
+                            + (rhs as f64 * T::conv_factor_micro_kelvin() as f64) as i64,
+                        unit: PhantomData,
+                    }
+                }
+            }
+
+            impl<T> ops::Add<Temperature<T>> for $N
+            where
+                T: crate::units::TemperatureUnit,
+            {
+                type Output = Temperature<T>;
+                fn add(self, rhs: Temperature<T>) -> Self::Output {
+                    Temperature {
+                        micro_kelvin: rhs.micro_kelvin
+                            + (self as f64 * T::conv_factor_micro_kelvin() as f64) as i64,
+                        unit: PhantomData,
+                    }
+                }
+            }
+
+            impl<T> ops::Sub<$N> for Temperature<T>
+            where
+                T: crate::units::TemperatureUnit,
+            {
+                type Output = Self;
+                fn sub(self, rhs: $N) -> Self::Output {
+                    Temperature {
+                        micro_kelvin: self.micro_kelvin
+                            - (rhs as f64 * T::conv_factor_micro_kelvin() as f64) as i64,
+                        unit: PhantomData,
+                    }
+                }
+            }
+
+            impl<T> ops::Mul<$N> for Temperature<T>
+            where
+                T: crate::units::TemperatureUnit,
+            {
+                type Output = Self;
+                fn mul(self, rhs: $N) -> Self::Output {
+                    Temperature {
+                        micro_kelvin: (rhs as f64 * self.micro_kelvin as f64
+                            + (1.0 - rhs as f64) * T::conv_offset_micro_kelvin() as f64)
+                            as i64,
+                        unit: PhantomData,
+                    }
+                }
+            }
+
+            impl<T> ops::Mul<Temperature<T>> for $N
+            where
+                T: crate::units::TemperatureUnit,
+            {
+                type Output = Temperature<T>;
+                fn mul(self, rhs: Temperature<T>) -> Self::Output {
+                    Temperature {
+                        micro_kelvin: (self as f64 * rhs.micro_kelvin as f64
+                            + (1.0 - self as f64) * T::conv_offset_micro_kelvin() as f64)
+                            as i64,
+                        unit: PhantomData,
+                    }
+                }
+            }
+
+            impl<T> ops::Div<$N> for Temperature<T>
+            where
+                T: crate::units::TemperatureUnit,
+            {
+                type Output = Self;
+                fn div(self, rhs: $N) -> Self::Output {
+                    Temperature {
+                        micro_kelvin: ((self.micro_kelvin as f64
+                            + (rhs as f64 - 1.0) * T::conv_offset_micro_kelvin() as f64)
+                            / rhs as f64) as i64,
+                        unit: PhantomData,
+                    }
+                }
+            }
+
+            impl<T> ops::Div<Temperature<T>> for $N
+            where
+                T: crate::units::TemperatureUnit,
+            {
+                type Output = $N;
+                fn div(self, rhs: Temperature<T>) -> Self::Output {
+                    (((rhs.micro_kelvin - T::conv_offset_micro_kelvin()) as f64)
+                        / (T::conv_factor_micro_kelvin() as f64 * self as f64)) as $N
+                }
+            }
+        };
+    }
+    ImplOpsForNumber!(f64);
+    ImplOpsForNumber!(i64);
+    impl<T> PartialEq for Temperature<T>
+    where
+        T: crate::units::TemperatureUnit,
     {
         fn eq(&self, other: &Self) -> bool {
             (self.micro_kelvin - other.micro_kelvin).abs() < TEMP_TOLERANCE
         }
     }
-
 }
-pub mod units {    
+pub mod units {
 
     pub trait TemperatureUnit {
         fn singular_name() -> String;
@@ -101,26 +213,38 @@ pub mod units {
         fn conv_offset_micro_kelvin() -> i64;
     }
 
-
     macro_rules! NewTemperatureUnit {
         ($unit_name:ident, $singular_name:expr, $abbreviation:expr, $conv_factor:expr, $conv_offset:expr) => {
-            
             #[derive(Debug, Clone, Eq, PartialEq)]
             pub struct $unit_name;
 
             impl TemperatureUnit for $unit_name {
                 #[inline(always)]
-                fn singular_name() -> String {$singular_name.to_string()}
+                fn singular_name() -> String {
+                    $singular_name.to_string()
+                }
                 #[inline(always)]
-                fn abbreviation() -> String {$abbreviation.to_string()}
+                fn abbreviation() -> String {
+                    $abbreviation.to_string()
+                }
                 #[inline(always)]
-                fn conv_factor_micro_kelvin() -> i64 {$conv_factor}
+                fn conv_factor_micro_kelvin() -> i64 {
+                    $conv_factor
+                }
                 #[inline(always)]
-                fn conv_offset_micro_kelvin() -> i64 {$conv_offset}
+                fn conv_offset_micro_kelvin() -> i64 {
+                    $conv_offset
+                }
             }
         };
     }
     NewTemperatureUnit!(Kelvin, "kelvin", "K", 1_000_000, 0);
     NewTemperatureUnit!(Celcius, "celcius", "C", 1_000_000, 273_150_000);
-    NewTemperatureUnit!(Fahrenheit, "fahrenheit", "F", (1_000_000.0/1.8) as i64, (459_670_000.0/1.8) as i64);
+    NewTemperatureUnit!(
+        Fahrenheit,
+        "fahrenheit",
+        "F",
+        (1_000_000.0 / 1.8) as i64,
+        (459_670_000.0 / 1.8) as i64
+    );
 }
