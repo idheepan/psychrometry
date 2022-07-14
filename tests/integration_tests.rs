@@ -1,11 +1,9 @@
 /// Test functions of the library
 /// 
 
-use psychrometry::{quantities::Temperature,units::Celcius};
+use psychrometry::{quantities::Temperature ,units::{Celcius, Fahrenheit}};
 
 mod tests {
-    use psychrometry::units::Fahrenheit;
-
     use super::*;
 
     #[test]
@@ -15,11 +13,11 @@ mod tests {
         let b = 212.18_f64;
         let t0 = Temperature::<Fahrenheit>::from(b);
         let t1 = Temperature::<Celcius>::from(a);
-        let t2 =  Temperature::<Fahrenheit>::from(b);
+        let t2 =  Temperature::<Fahrenheit>::from(&t1);
         // assert_eq!(t1, t2);
 
         let t4 = t2 -3;
         // let tr = i64::from(t2);
-        assert_eq!(t3, t4);
+        assert_eq!(t0, t4);
     }
 }
