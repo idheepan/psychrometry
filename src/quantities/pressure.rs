@@ -17,8 +17,7 @@ macro_rules! ImplPressureFromNumber {
         {
             fn from(n: $N) -> Self {
                 Pressure {
-                    milli_pascal: (n as f64 * T::conv_factor_milli_pascal() as f64)
-                        as i64,
+                    milli_pascal: (n as f64 * T::conv_factor_milli_pascal() as f64) as i64,
                     unit: PhantomData,
                 }
             }
@@ -29,8 +28,7 @@ macro_rules! ImplPressureFromNumber {
             T: crate::units::PressureUnit,
         {
             fn from(t: Pressure<T>) -> $N {
-                (t.milli_pascal as f64
-                    / (T::conv_factor_milli_pascal() as f64)) as $N
+                (t.milli_pascal as f64 / (T::conv_factor_milli_pascal() as f64)) as $N
             }
         }
     };
@@ -103,8 +101,7 @@ macro_rules! ImplOpsForNumber {
             type Output = Self;
             fn mul(self, rhs: $N) -> Self::Output {
                 Pressure {
-                    milli_pascal: (rhs as f64 * self.milli_pascal as f64)
-                        as i64,
+                    milli_pascal: (rhs as f64 * self.milli_pascal as f64) as i64,
                     unit: PhantomData,
                 }
             }
@@ -117,8 +114,7 @@ macro_rules! ImplOpsForNumber {
             type Output = Pressure<T>;
             fn mul(self, rhs: Pressure<T>) -> Self::Output {
                 Pressure {
-                    milli_pascal: (self as f64 * rhs.milli_pascal as f64)
-                        as i64,
+                    milli_pascal: (self as f64 * rhs.milli_pascal as f64) as i64,
                     unit: PhantomData,
                 }
             }
@@ -131,8 +127,7 @@ macro_rules! ImplOpsForNumber {
             type Output = Self;
             fn div(self, rhs: $N) -> Self::Output {
                 Pressure {
-                    milli_pascal: ((self.milli_pascal as f64)
-                        / rhs as f64) as i64,
+                    milli_pascal: ((self.milli_pascal as f64) / rhs as f64) as i64,
                     unit: PhantomData,
                 }
             }
@@ -144,8 +139,8 @@ macro_rules! ImplOpsForNumber {
         {
             type Output = $N;
             fn div(self, rhs: Pressure<T>) -> Self::Output {
-                ((rhs.milli_pascal as f64)
-                    / (T::conv_factor_milli_pascal() as f64 * self as f64)) as $N
+                ((rhs.milli_pascal as f64) / (T::conv_factor_milli_pascal() as f64 * self as f64))
+                    as $N
             }
         }
     };
@@ -156,7 +151,7 @@ ImplOpsForNumber!(i64);
 impl<T1, T2> PartialEq<Pressure<T1>> for Pressure<T2>
 where
     T1: crate::units::PressureUnit,
-    T2: crate::units::PressureUnit
+    T2: crate::units::PressureUnit,
 {
     fn eq(&self, other: &Pressure<T1>) -> bool {
         (self.milli_pascal - other.milli_pascal).abs() < PRES_TOLERANCE
@@ -168,15 +163,15 @@ mod pressure_tests {
     use super::*;
     use crate::units::{Atmosphere, Pascal, Psi};
     #[test]
-    fn create(){
-        let a = 1.2; //atm
-        let b = 121590; //Pa
-        let c = 17.6351385; //psi
+    fn create() {
+        let a = 1.2_f64; //atm
+        let b = 121_590; //Pa
+        let c = 17.635_138; //psi
         let pa = Pressure::<Atmosphere>::from(a);
         let pb = Pressure::<Pascal>::from(b);
         let pc = Pressure::<Psi>::from(c);
         assert_eq!(pa, pc);
-        assert_eq!(f64::from(pa), a);
+        assert!((f64::from(pa) - a).abs() < 1E-8);
         assert_eq!(pb, pc);
     }
 }

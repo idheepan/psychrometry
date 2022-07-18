@@ -32,10 +32,11 @@ macro_rules! NewTemperatureUnit {
 }
 NewTemperatureUnit!(Kelvin, "kelvin", "K", 1_000_000, 0);
 NewTemperatureUnit!(Celcius, "celcius", "C", 1_000_000, 273_150_000);
+
 NewTemperatureUnit!(
     Fahrenheit,
     "fahrenheit",
     "F",
-    (1_000_000.0 / 1.8) as i64,
+    (1_000_000.0_f32 / 1.8_f32) as i64,
     (459_670_000.0 / 1.8) as i64
 );

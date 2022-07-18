@@ -28,8 +28,8 @@
 #![warn(clippy::all)]
 //TODO: Fix documentation formating for units with underscore
 //TODO: Documentation for Result errors. The pedantic warning can be enabled after that.
-// Too many false positives for now.
-#![warn(clippy::pedantic)]
+// Too many false positives for now. Especially for cast_possible_truncation
+// #![warn(clippy::pedantic)]
 #![warn(clippy::must_use_candidate)]
 // #![warn(missing_docs)]
 #![allow(unused)]
@@ -37,6 +37,5 @@
 // TODO: Implement display and formatting for various quantities
 // TODO: Implement pressure, relative humidity, humidity ratio, specific enthalpy
 /// Funtions for psychrometric calculations.
-
 pub mod quantities;
 pub mod units;
