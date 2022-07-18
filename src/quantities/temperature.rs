@@ -154,11 +154,46 @@ macro_rules! ImplOpsForNumber {
 }
 ImplOpsForNumber!(f64);
 ImplOpsForNumber!(i64);
-impl<T> PartialEq for Temperature<T>
+impl<T1, T2> PartialEq<Temperature<T1>> for Temperature<T2>
 where
-    T: crate::units::TemperatureUnit,
+    T1: crate::units::TemperatureUnit,
+    T2: crate::units::TemperatureUnit
 {
-    fn eq(&self, other: &Self) -> bool {
+    fn eq(&self, other: &Temperature<T1>) -> bool {
         (self.micro_kelvin - other.micro_kelvin).abs() < TEMP_TOLERANCE
+    }
+}
+
+mod tests {
+    use super::*;    
+    use crate::units::{Kelvin, Celcius, Fahrenheit};
+    #[test]
+    /// Simple tests. Compared with psychrolib packages
+    fn create_temperatures() {
+        let a = 100.1;
+        let b = 212.18;
+        let c = 373.25;
+        let tf = Temperature::<Fahrenheit>::from(b);
+        let tc = Temperature::<Celcius>::from(a);
+        let tk =  Temperature::<Kelvin>::from(c);
+        // assert_eq!(t1, t2);
+
+        // let tr = i64::from(t2);
+        assert_eq!(tf, tk);
+        assert_eq!(tc, tk);
+    }
+
+    #[test]
+    fn convert_temperatures() {
+        let a = 100.1;
+        let b = 212.18;
+        let c = 373.25;
+        let tf = Temperature::<Fahrenheit>::from(b);
+        let tc = Temperature::<Celcius>::from(&tf);
+        let tk = Temperature::<Kelvin>::from(&tc);
+        assert!((f64::from(tc) - a).abs() < 0.000_2 );
+        let tf_from_k = Temperature::<Fahrenheit>::from(&tk);
+        assert!((f64::from(tf_from_k) - b).abs() < 0.000_2 );
+        assert!((f64::from(tk) - c).abs() < 0.000_2);
     }
 }
