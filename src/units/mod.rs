@@ -1,8 +1,13 @@
-mod temperature_units;
-mod pressure_units;
+mod units_base;
 
-pub (crate) use temperature_units::TemperatureUnit;
-pub use temperature_units::{Celcius, Kelvin, Fahrenheit};
+mod pressure;
+pub(crate) use pressure::PressureUnit;
+pub use pressure::{Atmosphere, Pascal, Psi};
 
-pub(crate) use pressure_units::PressureUnit;
-pub use pressure_units::{Atmosphere, Pascal, Psi};
+mod specific_enthalpy;
+pub(crate) use specific_enthalpy::SpecificEnthalpyUnit;
+pub use specific_enthalpy::{BtuPerPound, JoulesPerKg, KilojoulesPerKg};
+
+mod temperature;
+pub(crate) use temperature::TemperatureUnit;
+pub use temperature::{Celcius, Fahrenheit, Kelvin};

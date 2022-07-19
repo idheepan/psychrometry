@@ -36,6 +36,7 @@
 
 // TODO: Implement display and formatting for various quantities
 // TODO: Implement pressure, relative humidity, humidity ratio, specific enthalpy
+pub mod psychrolib;
 /// Funtions for psychrometric calculations.
 pub mod quantities;
 pub mod units;
