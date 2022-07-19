@@ -12,23 +12,39 @@ repository uses CamelCase. This library will update when it merges upstream.
 The following example lets you get the enthalpy of moist air with dry bulb temperature
 and relative humidty.
 ```
-use psychrometry::psychrolib;
-let mut psychrolib = psychrolib::SI {};
-let rel_hum = 0.25_f64; //Relative humidity from 0 to 1
-let t_dry_bulb = 30_f64; //Dry bulb temperature in Celcius for SI
-let pres_ambient = 101325_f64; //Ambient pressure in Pa for SI
-let hum_ratio = psychrolib.get_hum_ratio_from_rel_hum(t_dry_bulb, rel_hum, pres_ambient).unwrap();
-let enth = psychrolib.get_moist_air_enthalpy(t_dry_bulb, hum_ratio).unwrap();
-assert_eq!(47015.61,
-(enth*100.0).trunc()/100.0); //Truncating to two decimal points.
+use psychrometry::psychrolib::*;
+use psychrometry::quantities::{Pressure, SpecificEnthalpy, Temperature};
+use psychrometry::units::{Atmosphere, Fahrenheit, JoulesPerKg, KilojoulesPerKg};
+let rel_hum = 0.25;
+let tdry_bulb = Temperature::<Fahrenheit>::from(86);
+let pres_ambient = Pressure::<Atmosphere>::from(1);
+let sp_enthalpy: SpecificEnthalpy<KilojoulesPerKg> =
+    get_moist_air_enthalpy_from_rel_hum(tdry_bulb, rel_hum, pres_ambient).unwrap();
+let sp_enthalpy_exp = SpecificEnthalpy::<JoulesPerKg>::from(47015.61);
+assert_eq!(sp_enthalpy_exp, sp_enthalpy);
 ```
+## Quantities and units
+- Temperature
+  - celcius
+  - kelvin
+  - fahrenheit
+- Pressure
+  - pascal
+  - psi
+  - atmosphere
+- Specific Enthalpy
+  - joules per kilogram
+  - kilojoules per kilogram
+  - btu per pound
+
 ## Functions implemented so far
 - get_trankine_from_tfahrenheit
 - get_tfahrenheit_from_trankine
 - get_tkelvin_from_tcelsius
 - get_tcelsius_from_tkelvin
 - get_sat_vap_pres
-- get_moist_air_enthalpy
+- get_moist_air_enthalpy_from_rel_hum
+- get_moist_air_enthalpy_from_hum_ratio
 - get_vap_pres_from_hum_ratio
 - get_rel_hum_from_vap_pres
 - get_vap_pres_from_rel_hum
