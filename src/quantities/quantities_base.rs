@@ -29,6 +29,15 @@ macro_rules! NewQuantity {
                         (t.base_unit as f64 / (T::conv_factor_base_unit() as f64)) as $N
                     }
                 }
+
+                impl<T> From<&$quantity<T>> for $N
+                where
+                    T: $units,
+                {
+                    fn from(t: &$quantity<T>) -> $N {
+                        (t.base_unit as f64 / (T::conv_factor_base_unit() as f64)) as $N
+                    }
+                }
             };
         }
 
@@ -121,7 +130,7 @@ macro_rules! NewQuantity {
                 {
                     type Output = $N;
                     fn div(self, rhs: $quantity<T>) -> Self::Output {
-                        ((rhs.base_unit as f64) / (T::conv_factor_base_unit() as f64 * self as f64))
+                        ((T::conv_factor_base_unit() as f64 * self as f64) / (rhs.base_unit as f64))
                             as $N
                     }
                 }
@@ -136,6 +145,31 @@ macro_rules! NewQuantity {
             fn from(t1: &'a $quantity<T1>) -> Self {
                 $quantity {
                     base_unit: (t1.base_unit),
+                    unit: (PhantomData),
+                }
+            }
+        }
+
+        impl<T1, T2> ops::Div<$quantity<T2>> for $quantity<T1>
+        where
+            T1: $units,
+            T2: $units,
+        {
+            type Output = f64;
+            fn div(self, rhs: $quantity<T2>) -> Self::Output {
+                (self.base_unit as f64) / (rhs.base_unit as f64)
+            }
+        }
+
+        impl<T1, T2> ops::Sub<$quantity<T2>> for $quantity<T1>
+        where
+            T1: $units,
+            T2: $units,
+        {
+            type Output = $quantity<T1>;
+            fn sub(self, rhs: $quantity<T2>) -> Self::Output {
+                $quantity {
+                    base_unit: (self.base_unit - rhs.base_unit),
                     unit: (PhantomData),
                 }
             }
