@@ -29,9 +29,9 @@ pub enum PsychroLibErr {
 /// the discontinuity vanishes. It is essential to use the triple point of water otherwise function
 /// `get_tdew_point_from_vap_pres`, which inverts the present function, does not converge properly around
 /// the freezing point.
-/// Returns: Vapor Pressure of saturated air in Psi [IP] or Pa [SI] or atm
-/// `tdry_bulb` in Dry bulb temperature in °F [IP] or °C [SI] or K
-fn get_sat_vap_pres<T, P>(tdry_bulb: Temperature<T>) -> Result<Pressure<P>, PsychroLibErr>
+/// Returns: Vapor Pressure of saturated air in Psi  or Pa  or atm
+/// `tdry_bulb` in Dry bulb temperature in °F  or °C  or K
+pub fn get_sat_vap_pres<T, P>(tdry_bulb: Temperature<T>) -> Result<Pressure<P>, PsychroLibErr>
 where
     T: TemperatureUnit,
     P: PressureUnit,
@@ -50,45 +50,71 @@ where
             - 1.4452093E-08 * t_k.powi(3)
             + 6.5459673 * t_k.ln()
     };
-    Ok(Pressure::<P>::from(ln_pws.exp()))
+    let sat_vap_pres = Pressure::<Pascal>::from(ln_pws.exp());
+    Ok(Pressure::<P>::from(&sat_vap_pres))
+}
+
+fn enthalpy_in_jpkg(tdcf: f64, hum_ratio: f64) -> SpecificEnthalpy<JoulesPerKg> {
+    let ejpkgf = (1.006 * tdcf + hum_ratio * (2501. + 1.86 * tdcf)) * 1000.0;
+    SpecificEnthalpy::<JoulesPerKg>::from(ejpkgf)
 }
 
 /// Return moist air enthalpy given dry-bulb temperature and humidity ratio.
 /// Reference: ASHRAE Handbook - Fundamentals (2017) ch. 1 eqn. 30
-/// `tdry_bulb` Dry bulb temperature in °F [IP] or °C [SI]
-/// `hum_ratio` Humidity ratio in lb_H₂O lb_Air⁻¹ [IP] or kg_H₂O kg_Air⁻¹ [SI]
+/// `tdry_bulb` Dry bulb temperature in °F  or °C or K
+/// `hum_ratio` Humidity ratio in lb_H₂O lb_Air⁻¹  or kg_H₂O kg_Air⁻¹
 /// Returns Moist air enthalpy in J Kg_Air⁻¹
-fn get_moist_air_enthalpy<T: TemperatureUnit, SPE: SpecificEnthalpyUnit>(
+pub fn get_moist_air_enthalpy_from_hum_ratio<T: TemperatureUnit, SPE: SpecificEnthalpyUnit>(
     tdry_bulb: Temperature<T>,
     hum_ratio: f64,
 ) -> Result<SpecificEnthalpy<SPE>, PsychroLibErr> {
     let tdc = Temperature::<Celcius>::from(&tdry_bulb);
     let tdcf = f64::from(&tdc);
-    let ejpkgf = (1.006 * tdcf + hum_ratio * (2501. + 1.86 * tdcf)) * 1000.0;
-    let moist_air_enthalpy = SpecificEnthalpy::<JoulesPerKg>::from(ejpkgf);
+    let moist_air_enthalpy = enthalpy_in_jpkg(tdcf, hum_ratio);
     Ok(SpecificEnthalpy::<SPE>::from(&moist_air_enthalpy))
+}
+
+/// Return moist air enthalpy given dry-bulb temperature and relative humidity.
+/// Reference: ASHRAE Handbook - Fundamentals (2017) ch. 1 eqn. 30
+/// `tdry_bulb` Dry bulb temperature in °F  or °C or K
+/// `rel_hum` Relative humidity [0-1]
+/// Returns Moist air enthalpy in J Kg_Air⁻¹
+pub fn get_moist_air_enthalpy_from_rel_hum<
+    T: TemperatureUnit,
+    S: SpecificEnthalpyUnit,
+    P: PressureUnit,
+>(
+    tdry_bulb: Temperature<T>,
+    rel_hum: f64,
+    pres_ambient: Pressure<P>,
+) -> Result<SpecificEnthalpy<S>, PsychroLibErr> {
+    let tdc = Temperature::<Celcius>::from(&tdry_bulb);
+    let tdcf = f64::from(&tdc);
+    let hum_ratio = get_hum_ratio_from_rel_hum(tdry_bulb, rel_hum, pres_ambient)?;
+    let moist_air_enthalpy = enthalpy_in_jpkg(tdcf, hum_ratio);
+    Ok(SpecificEnthalpy::<S>::from(&moist_air_enthalpy))
 }
 
 /// Return vapor pressure given humidity ratio and pressure.
 /// Reference: ASHRAE Handbook - Fundamentals (2017) ch. 1 eqn 20 solved for pw
-/// Returns: Partial pressure of water vapor in moist air in Psi [IP] or Pa [SI]
-/// `hum_ratio` Humidity ratio in lb_H₂O lb_Air⁻¹ [IP] or kg_H₂O kg_Air⁻¹ [SI]
-/// `pressure` Atmospheric pressure in Psi [IP] or Pa [SI]
-fn get_vap_pres_from_hum_ratio<PA: PressureUnit, PV: PressureUnit>(
+/// Returns: Partial pressure of water vapor in moist air in Psi  or Pa or atm
+/// `hum_ratio` Humidity ratio in lb_H₂O lb_Air⁻¹  or kg_H₂O kg_Air⁻¹
+/// `pressure` Atmospheric pressure in Psi  or Pa or atm
+pub fn get_vap_pres_from_hum_ratio<PA: PressureUnit, PV: PressureUnit>(
     hum_ratio: f64,
-    atmospheric_pressure: Pressure<PA>,
+    pres_ambient: Pressure<PA>,
 ) -> Result<Pressure<PV>, PsychroLibErr> {
     // EFFICIENCY: Is it more efficient to have Pressure unit at the end? All operations as float till the pressure?
-    let vap_pres = hum_ratio / (0.621945 + hum_ratio) * atmospheric_pressure;
+    let vap_pres = hum_ratio / (0.621945 + hum_ratio) * pres_ambient;
     Ok(Pressure::<PV>::from(&vap_pres))
 }
 
 /// Return partial pressure of water vapor as a function of relative humidity and temperature.
 /// Reference: ASHRAE Handbook - Fundamentals (2017) ch. 1 eqn 12, 22
-/// Partial pressure of water vapor in moist air in Psi [IP] or Pa [SI]
-/// `tdry_bulb` Dry bulb temperature in °F [IP] or °C [SI]
+/// Partial pressure of water vapor in moist air in Psi  or Pa or atm
+/// `tdry_bulb` Dry bulb temperature in °F  or °C or K
 /// `rel_hum` Relative humidity [0-1]
-fn get_vap_pres_from_rel_hum<T: TemperatureUnit, PV: PressureUnit>(
+pub fn get_vap_pres_from_rel_hum<T: TemperatureUnit, PV: PressureUnit>(
     tdry_bulb: Temperature<T>,
     rel_hum: f64,
 ) -> Result<Pressure<PV>, PsychroLibErr> {
@@ -98,9 +124,9 @@ fn get_vap_pres_from_rel_hum<T: TemperatureUnit, PV: PressureUnit>(
 /// Return relative humidity given dry-bulb temperature and vapor pressure.
 /// Reference: ASHRAE Handbook - Fundamentals (2017) ch. 1 eqn 12, 22
 /// Returns: Relative humidity [0-1]
-/// `t_dry_bulb` Dry bulb temperature in °F [IP] or °C [SI]
-/// `vap_pres` Partial pressure of water vapor in moist air in Psi [IP] or Pa [SI]
-fn get_rel_hum_from_vap_pres<T: TemperatureUnit, PV: PressureUnit>(
+/// `t_dry_bulb` Dry bulb temperature in °F  or °C or K
+/// `vap_pres` Partial pressure of water vapor in moist air in Psi  or Pa or atm
+pub fn get_rel_hum_from_vap_pres<T: TemperatureUnit, PV: PressureUnit>(
     tdry_bulb: Temperature<T>,
     vap_pres: Pressure<PV>,
 ) -> Result<f64, PsychroLibErr> {
@@ -110,28 +136,32 @@ fn get_rel_hum_from_vap_pres<T: TemperatureUnit, PV: PressureUnit>(
 
 /// Return humidity ratio given water vapor pressure and atmospheric pressure.
 /// Reference: ASHRAE Handbook - Fundamentals (2017) ch. 1 eqn 20
-/// Returns Humidity Ratio in lb_H₂O lb_Air⁻¹ [IP] or kg_H₂O kg_Air⁻¹ [SI]
-fn get_hum_ratio_from_vap_pres<PV: PressureUnit, P: PressureUnit>(
+/// Returns Humidity Ratio in lb_H₂O lb_Air⁻¹  or kg_H₂O kg_Air⁻¹
+pub fn get_hum_ratio_from_vap_pres<PV: PressureUnit, P: PressureUnit>(
     vap_pres: Pressure<PV>,
-    atmospheric_pressure: Pressure<P>,
+    pres_ambient: Pressure<P>,
 ) -> Result<f64, PsychroLibErr> {
-    let hum_ratio = 0.621945 * f64::from(&vap_pres) / (atmospheric_pressure - vap_pres);
+    let pres_ambient_vp = Pressure::<PV>::from(&pres_ambient);
+    let vpf = f64::from(&vap_pres);
+    let apf = f64::from(&pres_ambient_vp);
+    let hum_ratio = 0.621945 * vpf / (apf - vpf);
     Ok(hum_ratio)
 }
 
 /// Return humidity ratio given dry-bulb temperature, relative humidity, and pressure.
 /// Reference: ASHRAE Handbook - Fundamentals (2017) ch. 1
-/// Returns: Humidity Ratio in lb_H₂O lb_Air⁻¹ [IP] or kg_H₂O kg_Air⁻¹ [SI]
-/// `tdry_bulb` Dry bulb temperature in °F [IP] or °C [SI]
+/// Returns: Humidity Ratio in lb_H₂O lb_Air⁻¹  or kg_H₂O kg_Air⁻¹
+/// `tdry_bulb` Dry bulb temperature in °F  or °C or K
 /// `rel_hum` Relative humidity [0-1]
-/// `pressure`  Atmospheric pressure in Psi [IP] or Pa [SI]
-fn get_hum_ratio_from_rel_hum<T: TemperatureUnit, P: PressureUnit>(
+/// `pressure`  Atmospheric pressure in Psi  or Pa or atm
+pub fn get_hum_ratio_from_rel_hum<T: TemperatureUnit, P: PressureUnit>(
     tdry_bulb: Temperature<T>,
     rel_hum: f64,
-    atmospheric_pressure: Pressure<P>,
+    pres_ambient: Pressure<P>,
 ) -> Result<f64, PsychroLibErr> {
     let vap_pres: Pressure<P> = get_vap_pres_from_rel_hum(tdry_bulb, rel_hum)?;
-    let hum_ratio = get_hum_ratio_from_vap_pres(vap_pres, atmospheric_pressure)?;
+    let hum_ratio = get_hum_ratio_from_vap_pres(vap_pres, pres_ambient)?;
+
     Ok(hum_ratio)
 }
 
@@ -162,17 +192,17 @@ mod tests {
         let hum_ratio = 0.010;
         let enthalpy_exp = SpecificEnthalpy::<KilojoulesPerKg>::from(55.748);
         let enthalpy_calc: SpecificEnthalpy<KilojoulesPerKg> =
-            get_moist_air_enthalpy(tdry_bulb, hum_ratio).unwrap();
+            get_moist_air_enthalpy_from_hum_ratio(tdry_bulb, hum_ratio).unwrap();
         assert_eq!(enthalpy_exp, enthalpy_calc);
     }
 
     #[test]
     fn get_vap_pres_from_hum_ratio_normal() {
         let hum_ratio = 0.005;
-        let atmospheric_pressure = Pressure::<Atmosphere>::from(1);
+        let pres_ambient = Pressure::<Atmosphere>::from(1);
         let vap_pres_exp = Pressure::<Psi>::from(0.1172028493);
         let vap_pres_calc: Pressure<Pascal> =
-            get_vap_pres_from_hum_ratio(hum_ratio, atmospheric_pressure).unwrap();
+            get_vap_pres_from_hum_ratio(hum_ratio, pres_ambient).unwrap();
         assert_eq!(vap_pres_exp, vap_pres_calc);
     }
 
@@ -186,45 +216,19 @@ mod tests {
         assert_eq!(vap_pres_exp, vap_pres_calc);
     }
 
-    // #[test]
-    // fn get_rel_hum_from_vap_pres_normal() {
-    //     let
-    //     assert_eq!(
-    //         0.3420,
-    //         (psychrolib
-    //             .get_rel_hum_from_vap_pres(20.0, 800.0)
-    //             .unwrap_or(0.0)
-    //             * 1E4)
-    //             .trunc()
-    //             / 1E4
-    //     );
-    // }
-
-    // #[test]
-    // fn get_hum_ratio_from_vap_pres_normal() {
-    //     let mut psychrolib = psychrolib::SI {};
-    //     assert_eq!(
-    //         0.0055,
-    //         (psychrolib
-    //             .get_hum_ratio_from_vap_pres(900.0, 101325.0)
-    //             .unwrap_or(0.0)
-    //             * 1E4)
-    //             .trunc()
-    //             / 1E4
-    //     );
-    // }
-
-    // #[test]
-    // fn get_hum_ratio_from_rel_hum_normal() {
-    //     let mut psychrolib = psychrolib::SI;
-    //     assert_eq!(
-    //         0.007165,
-    //         (psychrolib
-    //             .get_hum_ratio_from_rel_hum(24.870, 0.36699, 101325.0)
-    //             .unwrap_or(0.0)
-    //             * 1E6)
-    //             .trunc()
-    //             / 1E6
-    //     );
-    // }
+    #[test]
+    fn get_hum_ratio_from_vap_pres_normal() {
+        let vap_pres = Pressure::<Pascal>::from(2292.850);
+        let pres_ambient = Pressure::<Atmosphere>::from(1);
+        let hum_ratio = get_hum_ratio_from_vap_pres(vap_pres, pres_ambient).unwrap();
+        assert!((hum_ratio - 0.01439).abs() < 0.0001);
+    }
+    #[test]
+    fn get_hum_ratio_from_rel_hum_normal() {
+        let tdry_bulb = Temperature::<Fahrenheit>::from(86);
+        let pres_ambient = Pressure::<Psi>::from(14.6959);
+        let rel_hum = 0.25;
+        let hum_ratio = get_hum_ratio_from_rel_hum(tdry_bulb, rel_hum, pres_ambient).unwrap();
+        assert!((hum_ratio - 0.0065).abs() < 0.0001);
+    }
 }

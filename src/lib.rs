@@ -9,6 +9,33 @@
 //! # Quick Start
 //! The following example lets you get the enthalpy of moist air with dry bulb temperature
 //! and relative humidty.
+//! ```
+//!  use psychrometry::psychrolib::*;
+//!  use psychrometry::quantities::{Pressure, SpecificEnthalpy, Temperature};
+//!  use psychrometry::units::{Atmosphere, Fahrenheit, JoulesPerKg, KilojoulesPerKg};
+//!  let rel_hum = 0.25;
+//!  let tdry_bulb = Temperature::<Fahrenheit>::from(86);
+//!  let pres_ambient = Pressure::<Atmosphere>::from(1);
+//!  let sp_enthalpy: SpecificEnthalpy<KilojoulesPerKg> =
+//!      get_moist_air_enthalpy_from_rel_hum(tdry_bulb, rel_hum, pres_ambient).unwrap();
+//!  let sp_enthalpy_exp = SpecificEnthalpy::<JoulesPerKg>::from(47015.61);
+//!  assert_eq!(sp_enthalpy_exp, sp_enthalpy);
+//!    ```
+//! You can use any of the following units
+//!
+//! ## Quantities and units
+//! - Temperature
+//!     - celcius
+//!     - kelvin
+//!     - fahrenheit
+//! - Pressure
+//!     - pascal
+//!     - psi
+//!     - atmosphere
+//! - Specific Enthalpy
+//!     - joules per kilogram
+//!     - kilojoules per kilogram
+//!     - btu per pound
 
 //! # Functions implemented so far
 //! - `get_trankine_from_tfahrenheit`
@@ -18,12 +45,13 @@
 //! - `get_sat_vap_pres`
 //! - `get_moist_air_enthalpy`
 //! - `get_vap_pres_from_hum_ratio`
+//! - `get_moist_air_enthalpy_from_hum_ratio`
+//! - `get_moist_air_enthalpy_from_rel_hum`
 //! - `get_rel_hum_from_vap_pres`
 //! - `get_vap_pres_from_rel_hum`
 //! - `get_hum_ratio_from_vap_pres`
 //! - `get_hum_ratio_from_rel_hum`
-//!
-//!
+
 #![forbid(unsafe_code)]
 #![warn(clippy::all)]
 //TODO: Fix documentation formating for units with underscore
